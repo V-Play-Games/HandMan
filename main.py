@@ -15,7 +15,6 @@ FPS = 60
 
 SKY_BLUE = (135, 206, 235)
 WHITE = (255, 255, 255)
-CLOUD_COLOR = (240, 248, 255)
 PLATFORM_COLOR = (34, 139, 34)
 FINGER_COLOR = (255, 200, 180)
 BLACK = (0, 0, 0)
@@ -44,12 +43,11 @@ class Player(sprite.Sprite):
         from pygame import image, transform
         import os
 
-        for i in range(0, 5):  # 0 to 5 fingers
+        for i in range(0, 6):
             filename = f"hand{i}.png"
             if os.path.exists(filename):
                 try:
                     loaded_image = image.load(filename).convert_alpha()
-                    # Scale to 50x50 to match drawn sprite size
                     self.hand_images[i] = transform.scale(loaded_image, (50, 50))
                 except:
                     pass
@@ -61,20 +59,20 @@ class Player(sprite.Sprite):
         self.meme_sounds = []
         self.die0_sound = None
         self.die_sound = None
+        self.yippee_sound = None
 
         try:
             if os.path.exists("jump.mp3"):
-               self.jump_sound = mixer.Sound("jump.mp3")
+                self.jump_sound = mixer.Sound("jump.mp3")
         except:
-               self.jump_sound = None
+            self.jump_sound = None
 
         try:
             if os.path.exists("jump5.mp3"):
-               self.jump5_sound = mixer.Sound("jump5.mp3")
+                self.jump5_sound = mixer.Sound("jump5.mp3")
         except:
-               self.jump5_sound = None
+            self.jump5_sound = None
 
-        # Load meme sounds 1-7
         for i in range(1, 8):
             try:
                 if os.path.exists(f"meme{i}.mp3"):
@@ -82,7 +80,6 @@ class Player(sprite.Sprite):
             except:
                 pass
 
-        # Load die sounds
         try:
             if os.path.exists("die0.mp3"):
                 self.die0_sound = mixer.Sound("die0.mp3")
@@ -92,6 +89,12 @@ class Player(sprite.Sprite):
         try:
             if os.path.exists("die.mp3"):
                 self.die_sound = mixer.Sound("die.mp3")
+        except:
+            pass
+
+        try:
+            if os.path.exists("yippee.mp3"):
+                self.yippee_sound = mixer.Sound("yippee.mp3")
         except:
             pass
 
@@ -117,16 +120,16 @@ class Player(sprite.Sprite):
         rect(self.image, palm_color, (10, 30, 30, 15))
 
         finger_positions = [
-            (13, 15),  # Thumb
-            (20, 10),  # Index
-            (25, 8),  # Middle
-            (30, 10),  # Ring
-            (35, 15),  # Pinky
+            (13, 15),
+            (20, 10),
+            (25, 8),
+            (30, 10),
+            (35, 15),
         ]
 
         for i in range(min(self.fingers_collected, 5)):
             x, y = finger_positions[i]
-            if i == 0:  # Thumb
+            if i == 0:
                 rect(self.image, FINGER_COLOR, (x, y, 4, 12))
             else:
                 rect(self.image, FINGER_COLOR, (x, y, 3, 15))
@@ -154,7 +157,6 @@ class Player(sprite.Sprite):
         elif self.rect.left > SCREEN_WIDTH:
             self.rect.right = 0
 
-        # Check if fell off screen
         if self.rect.top > SCREEN_HEIGHT:
             if self.fingers_collected > 0:
                 if self.die0_sound:
@@ -175,21 +177,26 @@ class Player(sprite.Sprite):
         if self.on_ground:
             self.vel_y = self.jump_power
             self.on_ground = False
-            if random.randint(1, 10) <= 3 and self.meme_sounds:
+            if random.randint(1, 10) == 7 and self.meme_sounds:
                 random.choice(self.meme_sounds).play()
             elif self.jump_sound:
                 self.jump_sound.play()
 
     def collect_finger(self):
-        if self.fingers_collected == 5:
+        self.fingers_collected += 1
+        if self.fingers_collected > 5:
             return
-        self.fingers_collected = self.fingers_collected + 1
-        self.gravity -= 0.05
+        self.gravity -= 0.065
         self.update_sprite()
+        if self.yippee_sound:
+            self.yippee_sound.play()
 
 
 class Platform(Sprite):
-    def __init__(self, player, x, y, width, platform_type="cloud"):
+    hand_platform_image = None
+    grass_platform_image = None
+
+    def __init__(self, player, x, y, width, platform_type="hand"):
         super().__init__()
         self.width = width
         self.height = 20
@@ -200,17 +207,64 @@ class Platform(Sprite):
                 SCREEN_WIDTH - 150 - x - width)
         self.rect.y = y
         player.last_platform = self
+
+        if Platform.hand_platform_image is None and platform_type == "hand":
+            self.load_hand_platform_image()
+
+        if Platform.grass_platform_image is None and platform_type == "grass":
+            self.load_grass_platform_image()
+
         self.draw_platform()
 
+    def load_hand_platform_image(self):
+        from pygame import image
+        import os
+
+        if os.path.exists("hand.png"):
+            try:
+                Platform.hand_platform_image = image.load("hand.png").convert_alpha()
+            except:
+                pass
+
+    def load_grass_platform_image(self):
+        from pygame import image
+        import os
+
+        if os.path.exists("platform.png"):
+            try:
+                Platform.grass_platform_image = image.load("platform.png").convert_alpha()
+            except:
+                pass
+
     def draw_platform(self):
-        if self.type == "cloud":
-            ellipse(self.image, CLOUD_COLOR, (0, 5, self.width, 15))
-            ellipse(self.image, CLOUD_COLOR, (self.width // 4, 0, self.width // 2, 20))
-            ellipse(self.image, WHITE, (10, 8, self.width - 20, 10))
-            ellipse(self.image, (200, 200, 200), (0, 5, self.width, 15), 2)
+        if self.type == "hand":
+            if Platform.hand_platform_image is not None:
+                from pygame import transform
+                scaled_image = transform.scale(Platform.hand_platform_image, (self.width, self.height))
+                self.image.blit(scaled_image, (0, 0))
+            else:
+                palm_color = (255, 220, 177)
+                ellipse(self.image, palm_color, (self.width // 4, 5, self.width // 2, 15))
+                rect(self.image, palm_color, (self.width // 4, 8, self.width // 2, 10))
+
+                finger_width = max(3, self.width // 20)
+                num_fingers = min(5, self.width // 20)
+                spacing = (self.width - num_fingers * finger_width) // (num_fingers + 1)
+
+                for i in range(num_fingers):
+                    finger_x = spacing + i * (finger_width + spacing)
+                    rect(self.image, FINGER_COLOR, (finger_x, 0, finger_width, 10))
+                    ellipse(self.image, FINGER_COLOR, (finger_x - 1, -2, finger_width + 2, 6))
+
+                ellipse(self.image, BLACK, (self.width // 4, 5, self.width // 2, 15), 2)
         else:
-            rect(self.image, PLATFORM_COLOR, (0, 0, self.width, self.height))
-            rect(self.image, (20, 100, 20), (0, 0, self.width, self.height), 2)
+            if Platform.grass_platform_image is not None:
+                from pygame import transform
+                scaled_image = transform.scale(Platform.grass_platform_image, (self.width, self.height))
+                self.image.blit(scaled_image, (0, 0))
+            else:
+                rect(self.image, PLATFORM_COLOR, (0, 0, self.width, self.height))
+                rect(self.image, (20, 100, 20), (0, 0, self.width, self.height), 2)
 
     def update(self, scroll_speed):
         self.rect.y += scroll_speed
@@ -244,7 +298,30 @@ class Game:
         self.clock = time.Clock()
         self.font = font.Font(None, 36)
         self.small_font = font.Font(None, 24)
+        self.load_background()
+        self.load_bgm()
         self.reset_game()
+
+    def load_background(self):
+        from pygame import image, transform
+        import os
+        self.background = None
+        if os.path.exists("background.jpg"):
+            try:
+                bg_image = image.load("background.jpg").convert()
+                self.background = transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+                self.background.set_alpha(191)
+            except:
+                pass
+
+    def load_bgm(self):
+        import os
+        if os.path.exists("bgm.mp3"):
+            try:
+                mixer.music.load("bgm.mp3")
+                mixer.music.play(-1)
+            except:
+                pass
 
     def reset_game(self):
         self.player = Player()
@@ -259,7 +336,7 @@ class Game:
         self.running = True
         self.game_over = False
         self.show_hitboxes = False
-        start_platform = Platform(self.player, SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT - 50, 150, "grass")
+        start_platform = Platform(self.player, SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT - 50, 100, "grass")
         for i in range(9):
             self.spawn_platform(y=SCREEN_HEIGHT - i * 80 - 50)
 
@@ -272,13 +349,13 @@ class Game:
             base_x = self.player.last_platform.rect.x
         x = random.randint(-150, 150) + base_x
         y += self.player.fingers_collected
-        width = random.randint(80, 150)
-        platform_type = random.choice(["cloud", "cloud", "grass"])
+        width = random.randint(50, 100)
+        platform_type = random.choice(["hand", "hand", "grass"])
         platform = Platform(self.player, x, y, width, platform_type)
         self.platforms.add(platform)
         self.all_sprites.add(platform)
 
-        if random.random() < 0.4:  # 40% chance
+        if random.random() < 0.4:
             finger_x = x + width // 2 - 10
             finger_y = y - 35
             finger = Finger(finger_x, finger_y)
@@ -315,7 +392,7 @@ class Game:
         if self.player.vel_y > 0:
             for platform in self.platforms:
                 if self.player.rect.colliderect(platform.rect):
-                    if platform.type == "cloud":
+                    if platform.type == "hand":
                         if self.player.rect.bottom <= platform.rect.top + 10:
                             self.player.rect.bottom = platform.rect.top
                             self.player.vel_y = 0
@@ -360,6 +437,9 @@ class Game:
     def draw(self):
         self.screen.fill(BLACK)
 
+        if self.background is not None:
+            self.screen.blit(self.background, (0, 0))
+
         self.all_sprites.draw(self.screen)
 
         if self.show_hitboxes:
@@ -377,7 +457,7 @@ class Game:
         fingers_text = self.font.render(f"Fingers: {self.player.fingers_collected}", True, ORANGE)
         self.screen.blit(fingers_text, (10, 50))
 
-        controls_text = self.small_font.render("SPACE/UP: Jump | LEFT/RIGHT: Move", True, BLACK)
+        controls_text = self.small_font.render("SPACE/UP: Jump | LEFT/RIGHT: Move", True, WHITE)
         self.screen.blit(controls_text, (10, SCREEN_HEIGHT - 30))
 
         if self.game_over:
