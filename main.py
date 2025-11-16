@@ -31,7 +31,7 @@ class Player(sprite.Sprite):
         self.vel_x = 0
         self.on_ground = False
         self.jump_power = -15
-        self.gravity = 0.6
+        self.gravity = 0.8
         self.update_sprite()
 
     def update_sprite(self):
@@ -163,6 +163,7 @@ class Game:
         self.score = 0
         self.running = True
         self.game_over = False
+        self.show_hitboxes = False
 
         for i in range(8):
             x = random.randint(50, SCREEN_WIDTH - 150)
@@ -205,6 +206,8 @@ class Game:
                         self.reset_game()
                 elif e.key == K_ESCAPE:
                     self.running = False
+                elif e.key == ord('h'):
+                    self.show_hitboxes = not self.show_hitboxes
 
     def update(self):
         if self.game_over:
@@ -262,13 +265,21 @@ class Game:
                 self.score += 100
 
         if len(self.platforms) < 10:
-            if random.random() < 0.1:
-                self.spawn_platform()
+            self.spawn_platform()
 
     def draw(self):
         self.screen.fill(SKY_BLUE)
 
         self.all_sprites.draw(self.screen)
+
+        if self.show_hitboxes:
+            draw.rect(self.screen, (255, 0, 0), self.player.rect, 2)
+
+            for platform in self.platforms:
+                draw.rect(self.screen, (0, 255, 0), platform.rect, 2)
+
+            for finger in self.fingers:
+                draw.rect(self.screen, (255, 255, 0), finger.rect, 2)
 
         score_text = self.font.render(f"Score: {self.score}", True, BLACK)
         self.screen.blit(score_text, (10, 10))
