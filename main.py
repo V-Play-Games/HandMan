@@ -222,10 +222,22 @@ class Game:
         if self.player.vel_y > 0:
             for platform in self.platforms:
                 if self.player.rect.colliderect(platform.rect):
-                    if self.player.rect.bottom <= platform.rect.bottom:
-                        self.player.rect.bottom = platform.rect.top
-                        self.player.vel_y = 0
-                        self.player.on_ground = True
+                    if platform.type == "cloud":
+                        if self.player.rect.bottom <= platform.rect.top + 10:
+                            self.player.rect.bottom = platform.rect.top
+                            self.player.vel_y = 0
+                            self.player.on_ground = True
+                    elif platform.type == "grass":
+                        if self.player.rect.bottom <= platform.rect.bottom:
+                            self.player.rect.bottom = platform.rect.top
+                            self.player.vel_y = 0
+                            self.player.on_ground = True
+
+        for platform in self.platforms:
+            if platform.type == "grass" and self.player.rect.colliderect(platform.rect):
+                if self.player.vel_y < 0 and self.player.rect.top < platform.rect.bottom:
+                    self.player.rect.top = platform.rect.bottom
+                    self.player.vel_y = 0
 
         if self.player.rect.top < SCREEN_HEIGHT // 3:
             scroll = (SCREEN_HEIGHT // 3 - self.player.rect.top) * 0.1
