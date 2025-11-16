@@ -1,8 +1,8 @@
+import math
+import random
+
 from pygame import init, K_LEFT, K_w, K_ESCAPE, display, QUIT, draw, K_a, K_UP, Surface, K_d, K_SPACE, SRCALPHA, sprite, \
     KEYDOWN, quit, time, event, K_RIGHT, key, font
-import random
-import math
-
 from pygame.draw import rect, ellipse
 from pygame.sprite import Sprite
 
@@ -20,13 +20,15 @@ FINGER_COLOR = (255, 200, 180)
 BLACK = (0, 0, 0)
 ORANGE = (255, 165, 0)
 
+
 class Player(sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.fingers_collected = 0
         self.image = Surface((50, 50), SRCALPHA)
         self.rect = self.image.get_rect()
-        self.rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+        self.rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
+        self.last_platform = None
         self.vel_y = 0
         self.vel_x = 0
         self.on_ground = False
@@ -42,9 +44,9 @@ class Player(sprite.Sprite):
         rect(self.image, palm_color, (10, 30, 30, 15))
 
         finger_positions = [
-            (15, 15),  # Thumb
+            (13, 15),  # Thumb
             (20, 10),  # Index
-            (25, 8),   # Middle
+            (25, 8),  # Middle
             (30, 10),  # Ring
             (35, 15),  # Pinky
         ]
@@ -52,7 +54,7 @@ class Player(sprite.Sprite):
         for i in range(min(self.fingers_collected, 5)):
             x, y = finger_positions[i]
             if i == 0:  # Thumb
-                rect(self.image, FINGER_COLOR, (x - 2, y, 4, 12))
+                rect(self.image, FINGER_COLOR, (x, y, 4, 12))
             else:
                 rect(self.image, FINGER_COLOR, (x, y, 3, 15))
 
@@ -91,20 +93,24 @@ class Player(sprite.Sprite):
             self.on_ground = False
 
     def collect_finger(self):
-        self.fingers_collected += 1
+        if self.fingers_collected == 5:
+            return
+        self.fingers_collected = self.fingers_collected + 1
+        self.gravity -= 0.05
         self.update_sprite()
 
 
 class Platform(Sprite):
-    def __init__(self, x, y, width, platform_type="cloud"):
+    def __init__(self, player, x, y, width, platform_type="cloud"):
         super().__init__()
         self.width = width
         self.height = 20
         self.type = platform_type
         self.image = Surface((width, self.height), SRCALPHA)
         self.rect = self.image.get_rect()
-        self.rect.x = x
+        self.rect.x = x if x > 0 else (x - SCREEN_WIDTH + 150 if x > SCREEN_WIDTH -150 else SCREEN_WIDTH - 150 - x - width)
         self.rect.y = y
+        player.last_platform = self
         self.draw_platform()
 
     def draw_platform(self):
@@ -164,26 +170,22 @@ class Game:
         self.running = True
         self.game_over = False
         self.show_hitboxes = False
+        start_platform = Platform(self.player, SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT - 50, 150, "grass")
+        for i in range(9):
+            self.spawn_platform(y=SCREEN_HEIGHT - i * 80 - 50)
 
-        for i in range(8):
-            x = random.randint(50, SCREEN_WIDTH - 150)
-            y = SCREEN_HEIGHT - i * 80 - 50
-            width = random.randint(80, 150)
-            platform_type = random.choice(["cloud", "cloud", "grass"])
-            platform = Platform(x, y, width, platform_type)
-            self.platforms.add(platform)
-            self.all_sprites.add(platform)
-
-        start_platform = Platform(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT - 50, 150, "grass")
         self.platforms.add(start_platform)
         self.all_sprites.add(start_platform)
 
-    def spawn_platform(self):
-        x = random.randint(50, SCREEN_WIDTH - 150)
-        y = -20
+    def spawn_platform(self, y=-20):
+        base_x = 0
+        if self.player.last_platform is not None:
+            base_x = self.player.last_platform.rect.x
+        x = random.randint(-150, 150) + base_x
+        y += self.player.fingers_collected
         width = random.randint(80, 150)
         platform_type = random.choice(["cloud", "cloud", "grass"])
-        platform = Platform(x, y, width, platform_type)
+        platform = Platform(self.player, x, y, width, platform_type)
         self.platforms.add(platform)
         self.all_sprites.add(platform)
 
@@ -268,7 +270,7 @@ class Game:
             self.spawn_platform()
 
     def draw(self):
-        self.screen.fill(SKY_BLUE)
+        self.screen.fill(BLACK)
 
         self.all_sprites.draw(self.screen)
 
@@ -281,7 +283,7 @@ class Game:
             for finger in self.fingers:
                 draw.rect(self.screen, (255, 255, 0), finger.rect, 2)
 
-        score_text = self.font.render(f"Score: {self.score}", True, BLACK)
+        score_text = self.font.render(f"Score: {self.score}", True, WHITE)
         self.screen.blit(score_text, (10, 10))
 
         fingers_text = self.font.render(f"Fingers: {self.player.fingers_collected}", True, ORANGE)
@@ -298,13 +300,17 @@ class Game:
 
             game_over_text = self.font.render("GAME OVER!", True, WHITE)
             final_score_text = self.font.render(f"Final Score: {self.score}", True, WHITE)
-            fingers_collected_text = self.font.render(f"Fingers Collected: {self.player.fingers_collected}", True, ORANGE)
+            fingers_collected_text = self.font.render(f"Fingers Collected: {self.player.fingers_collected}", True,
+                                                      ORANGE)
             restart_text = self.small_font.render("Press SPACE to restart", True, WHITE)
 
-            self.screen.blit(game_over_text, (SCREEN_WIDTH//2 - game_over_text.get_width()//2, SCREEN_HEIGHT//2 - 60))
-            self.screen.blit(final_score_text, (SCREEN_WIDTH//2 - final_score_text.get_width()//2, SCREEN_HEIGHT//2 - 20))
-            self.screen.blit(fingers_collected_text, (SCREEN_WIDTH//2 - fingers_collected_text.get_width()//2, SCREEN_HEIGHT//2 + 20))
-            self.screen.blit(restart_text, (SCREEN_WIDTH//2 - restart_text.get_width()//2, SCREEN_HEIGHT//2 + 60))
+            self.screen.blit(game_over_text,
+                             (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2, SCREEN_HEIGHT // 2 - 60))
+            self.screen.blit(final_score_text,
+                             (SCREEN_WIDTH // 2 - final_score_text.get_width() // 2, SCREEN_HEIGHT // 2 - 20))
+            self.screen.blit(fingers_collected_text,
+                             (SCREEN_WIDTH // 2 - fingers_collected_text.get_width() // 2, SCREEN_HEIGHT // 2 + 20))
+            self.screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2, SCREEN_HEIGHT // 2 + 60))
 
         display.flip()
 
@@ -321,4 +327,3 @@ class Game:
 if __name__ == "__main__":
     game = Game()
     game.run()
-
