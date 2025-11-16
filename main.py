@@ -60,7 +60,7 @@ class Player(sprite.Sprite):
 
         ellipse(self.image, BLACK, (10, 25, 30, 20), 2)
 
-    def update(self):
+    def update(self) -> bool:
         keys = key.get_pressed()
         self.vel_x = 0
         if keys[K_LEFT] or keys[K_a]:
@@ -83,7 +83,14 @@ class Player(sprite.Sprite):
 
         # Check if fell off screen
         if self.rect.top > SCREEN_HEIGHT:
-            return True
+            if self.fingers_collected > 0:
+                self.fingers_collected = 0
+                self.gravity = 0.8
+                self.update_sprite()
+                self.rect.center = (SCREEN_WIDTH // 2, 100)
+                self.vel_y = 0
+            else:
+                return True
 
         return False
 
@@ -108,7 +115,8 @@ class Platform(Sprite):
         self.type = platform_type
         self.image = Surface((width, self.height), SRCALPHA)
         self.rect = self.image.get_rect()
-        self.rect.x = x if x > 0 else (x - SCREEN_WIDTH + 150 if x > SCREEN_WIDTH -150 else SCREEN_WIDTH - 150 - x - width)
+        self.rect.x = x - SCREEN_WIDTH + 150 if x > SCREEN_WIDTH - 150 else x if x > 0 else (
+                    SCREEN_WIDTH - 150 - x - width)
         self.rect.y = y
         player.last_platform = self
         self.draw_platform()
@@ -217,9 +225,8 @@ class Game:
 
         self.game_time += 1
 
-        game_over = self.player.update()
-        if game_over:
-            self.game_over = True
+        self.game_over = self.player.update()
+        if self.game_over:
             return
 
         self.player.on_ground = False
