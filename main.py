@@ -41,19 +41,16 @@ class Player(sprite.Sprite):
 
     def load_hand_images(self):
         from pygame import image, transform
-        import os
 
         for i in range(0, 6):
             filename = f"hand{i}.png"
-            if os.path.exists(filename):
-                try:
-                    loaded_image = image.load(filename).convert_alpha()
-                    self.hand_images[i] = transform.scale(loaded_image, (50, 50))
-                except:
-                    pass
+            try:
+                loaded_image = image.load(filename).convert_alpha()
+                self.hand_images[i] = transform.scale(loaded_image, (50, 50))
+            except:
+                pass
 
     def load_jump_sound(self):
-        import os
         self.jump_sound = None
         self.jump5_sound = None
         self.meme_sounds = []
@@ -62,39 +59,33 @@ class Player(sprite.Sprite):
         self.yippee_sound = None
 
         try:
-            if os.path.exists("jump.mp3"):
-                self.jump_sound = mixer.Sound("jump.mp3")
+            self.jump_sound = mixer.Sound("jump.mp3")
         except:
             self.jump_sound = None
 
         try:
-            if os.path.exists("jump5.mp3"):
-                self.jump5_sound = mixer.Sound("jump5.mp3")
+            self.jump5_sound = mixer.Sound("jump5.mp3")
         except:
             self.jump5_sound = None
 
         for i in range(1, 8):
             try:
-                if os.path.exists(f"meme{i}.mp3"):
-                    self.meme_sounds.append(mixer.Sound(f"meme{i}.mp3"))
+                self.meme_sounds.append(mixer.Sound(f"meme{i}.mp3"))
             except:
                 pass
 
         try:
-            if os.path.exists("die0.mp3"):
-                self.die0_sound = mixer.Sound("die0.mp3")
+            self.die0_sound = mixer.Sound("die0.mp3")
         except:
             pass
 
         try:
-            if os.path.exists("die.mp3"):
-                self.die_sound = mixer.Sound("die.mp3")
+            self.die_sound = mixer.Sound("die.mp3")
         except:
             pass
 
         try:
-            if os.path.exists("yippee.mp3"):
-                self.yippee_sound = mixer.Sound("yippee.mp3")
+            self.yippee_sound = mixer.Sound("yippee.mp3")
         except:
             pass
 
@@ -218,23 +209,19 @@ class Platform(Sprite):
 
     def load_hand_platform_image(self):
         from pygame import image
-        import os
 
-        if os.path.exists("hand.png"):
-            try:
-                Platform.hand_platform_image = image.load("hand.png").convert_alpha()
-            except:
-                pass
+        try:
+            Platform.hand_platform_image = image.load("hand.png").convert_alpha()
+        except:
+            pass
 
     def load_grass_platform_image(self):
         from pygame import image
-        import os
 
-        if os.path.exists("platform.png"):
-            try:
-                Platform.grass_platform_image = image.load("platform.png").convert_alpha()
-            except:
-                pass
+        try:
+            Platform.grass_platform_image = image.load("platform.png").convert_alpha()
+        except:
+            pass
 
     def draw_platform(self):
         if self.type == "hand":
@@ -304,24 +291,20 @@ class Game:
 
     def load_background(self):
         from pygame import image, transform
-        import os
         self.background = None
-        if os.path.exists("background.jpg"):
-            try:
-                bg_image = image.load("background.jpg").convert()
-                self.background = transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
-                self.background.set_alpha(191)
-            except:
-                pass
+        try:
+            bg_image = image.load("background.jpg").convert()
+            self.background = transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+            self.background.set_alpha(191)
+        except:
+            pass
 
     def load_bgm(self):
-        import os
-        if os.path.exists("bgm.mp3"):
-            try:
-                mixer.music.load("bgm.mp3")
-                mixer.music.play(-1)
-            except:
-                pass
+        try:
+            mixer.music.load("bgm.mp3")
+            mixer.music.play(-1)
+        except:
+            pass
 
     def reset_game(self):
         self.player = Player()
