@@ -20,6 +20,18 @@ FINGER_COLOR = (255, 200, 180)
 BLACK = (0, 0, 0)
 ORANGE = (255, 165, 0)
 
+import sys
+import os
+
+def resource_path(relative_path):
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 class Player(sprite.Sprite):
     def __init__(self):
@@ -38,14 +50,15 @@ class Player(sprite.Sprite):
         self.load_hand_images()
         self.load_jump_sound()
         self.update_sprite()
+        self.fingers_collected_total = 0
 
     def load_hand_images(self):
         from pygame import image, transform
 
         for i in range(0, 6):
-            filename = f"hand{i}.png"
+            filename = f"assets/hand{i}.png"
             try:
-                loaded_image = image.load(filename).convert_alpha()
+                loaded_image = image.load(resource_path(filename)).convert_alpha()
                 self.hand_images[i] = transform.scale(loaded_image, (50, 50))
             except:
                 pass
@@ -59,7 +72,7 @@ class Player(sprite.Sprite):
         self.yippee_sound = None
 
         try:
-            self.jump_sound = mixer.Sound("jump.mp3")
+            self.jump_sound = mixer.Sound("assets/jump.mp3")
         except:
             self.jump_sound = None
 
@@ -75,17 +88,17 @@ class Player(sprite.Sprite):
                 pass
 
         try:
-            self.die0_sound = mixer.Sound("die0.mp3")
+            self.die0_sound = mixer.Sound("assets/die0.mp3")
         except:
             pass
 
         try:
-            self.die_sound = mixer.Sound("die.mp3")
+            self.die_sound = mixer.Sound("assets/die.mp3")
         except:
             pass
 
         try:
-            self.yippee_sound = mixer.Sound("yippee.mp3")
+            self.yippee_sound = mixer.Sound("assets/yippee.mp3")
         except:
             pass
 
@@ -175,6 +188,7 @@ class Player(sprite.Sprite):
 
     def collect_finger(self):
         self.fingers_collected += 1
+        self.fingers_collected_total += 1
         if self.fingers_collected > 5:
             return
         self.gravity -= 0.065
@@ -211,7 +225,7 @@ class Platform(Sprite):
         from pygame import image
 
         try:
-            Platform.hand_platform_image = image.load("hand.png").convert_alpha()
+            Platform.hand_platform_image = image.load(resource_path("assets/hand.png")).convert_alpha()
         except:
             pass
 
@@ -219,7 +233,7 @@ class Platform(Sprite):
         from pygame import image
 
         try:
-            Platform.grass_platform_image = image.load("platform.png").convert_alpha()
+            Platform.grass_platform_image = image.load(resource_path("assets/platform.png")).convert_alpha()
         except:
             pass
 
@@ -293,7 +307,7 @@ class Game:
         from pygame import image, transform
         self.background = None
         try:
-            bg_image = image.load("background.jpg").convert()
+            bg_image = image.load(resource_path("assets/background.jpg")).convert()
             self.background = transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
             self.background.set_alpha(191)
         except:
@@ -301,7 +315,7 @@ class Game:
 
     def load_bgm(self):
         try:
-            mixer.music.load("bgm.mp3")
+            mixer.music.load(resource_path("assets/bgm.mp3"))
             mixer.music.play(-1)
         except:
             pass
@@ -451,7 +465,7 @@ class Game:
 
             game_over_text = self.font.render("GAME OVER!", True, WHITE)
             final_score_text = self.font.render(f"Final Score: {self.score}", True, WHITE)
-            fingers_collected_text = self.font.render(f"Fingers Collected: {self.player.fingers_collected}", True,
+            fingers_collected_text = self.font.render(f"Total Fingers Collected: {self.player.fingers_collected_total}", True,
                                                       ORANGE)
             restart_text = self.small_font.render("Press SPACE to restart", True, WHITE)
 
