@@ -2,11 +2,12 @@ import math
 import random
 
 from pygame import init, K_LEFT, K_w, K_ESCAPE, display, QUIT, draw, K_a, K_UP, Surface, K_d, K_SPACE, SRCALPHA, sprite, \
-    KEYDOWN, quit, time, event, K_RIGHT, key, font
+    KEYDOWN, quit, time, event, K_RIGHT, key, font, mixer
 from pygame.draw import rect, ellipse
 from pygame.sprite import Sprite
 
 init()
+mixer.init()
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -34,9 +35,81 @@ class Player(sprite.Sprite):
         self.on_ground = False
         self.jump_power = -15
         self.gravity = 0.8
+        self.hand_images = {}
+        self.load_hand_images()
+        self.load_jump_sound()
         self.update_sprite()
 
+    def load_hand_images(self):
+        from pygame import image, transform
+        import os
+
+        for i in range(0, 5):  # 0 to 5 fingers
+            filename = f"hand{i}.png"
+            if os.path.exists(filename):
+                try:
+                    loaded_image = image.load(filename).convert_alpha()
+                    # Scale to 50x50 to match drawn sprite size
+                    self.hand_images[i] = transform.scale(loaded_image, (50, 50))
+                except:
+                    pass
+
+    def load_jump_sound(self):
+        import os
+        self.jump_sound = None
+        self.jump5_sound = None
+        self.meme_sounds = []
+        self.die0_sound = None
+        self.die_sound = None
+
+        try:
+            if os.path.exists("jump.mp3"):
+               self.jump_sound = mixer.Sound("jump.mp3")
+        except:
+               self.jump_sound = None
+
+        try:
+            if os.path.exists("jump5.mp3"):
+               self.jump5_sound = mixer.Sound("jump5.mp3")
+        except:
+               self.jump5_sound = None
+
+        # Load meme sounds 1-7
+        for i in range(1, 8):
+            try:
+                if os.path.exists(f"meme{i}.mp3"):
+                    self.meme_sounds.append(mixer.Sound(f"meme{i}.mp3"))
+            except:
+                pass
+
+        # Load die sounds
+        try:
+            if os.path.exists("die0.mp3"):
+                self.die0_sound = mixer.Sound("die0.mp3")
+        except:
+            pass
+
+        try:
+            if os.path.exists("die.mp3"):
+                self.die_sound = mixer.Sound("die.mp3")
+        except:
+            pass
+
     def update_sprite(self):
+        if self.fingers_collected in self.hand_images:
+            self.image = self.hand_images[self.fingers_collected]
+            center = self.rect.center
+            self.rect = self.image.get_rect()
+            self.rect.center = center
+            return
+
+        if self.fingers_collected not in self.hand_images:
+            self.image = self.hand_images[0]
+            center = self.rect.center
+            self.rect = self.image.get_rect()
+            self.rect.center = center
+            return
+
         self.image.fill((0, 0, 0, 0))
 
         palm_color = (255, 220, 177)
@@ -84,12 +157,16 @@ class Player(sprite.Sprite):
         # Check if fell off screen
         if self.rect.top > SCREEN_HEIGHT:
             if self.fingers_collected > 0:
+                if self.die0_sound:
+                    self.die0_sound.play()
                 self.fingers_collected = 0
                 self.gravity = 0.8
                 self.update_sprite()
                 self.rect.center = (SCREEN_WIDTH // 2, 100)
                 self.vel_y = 0
             else:
+                if self.die_sound:
+                    self.die_sound.play()
                 return True
 
         return False
@@ -98,6 +175,10 @@ class Player(sprite.Sprite):
         if self.on_ground:
             self.vel_y = self.jump_power
             self.on_ground = False
+            if random.randint(1, 10) <= 3 and self.meme_sounds:
+                random.choice(self.meme_sounds).play()
+            elif self.jump_sound:
+                self.jump_sound.play()
 
     def collect_finger(self):
         if self.fingers_collected == 5:
@@ -116,7 +197,7 @@ class Platform(Sprite):
         self.image = Surface((width, self.height), SRCALPHA)
         self.rect = self.image.get_rect()
         self.rect.x = x - SCREEN_WIDTH + 150 if x > SCREEN_WIDTH - 150 else x if x > 0 else (
-                    SCREEN_WIDTH - 150 - x - width)
+                SCREEN_WIDTH - 150 - x - width)
         self.rect.y = y
         player.last_platform = self
         self.draw_platform()
