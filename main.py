@@ -191,7 +191,7 @@ class Player(sprite.Sprite):
         self.fingers_collected_total += 1
         if self.fingers_collected > 5:
             return
-        self.gravity -= 0.065
+        self.gravity -= 0.05
         self.update_sprite()
         if self.yippee_sound:
             self.yippee_sound.play()

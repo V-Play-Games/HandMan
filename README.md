@@ -17,7 +17,7 @@ In the end, this is all basically a metaphor for feeling lost and learning to fi
 ## Requirements
 
 - Python 3.x
-- pygame==2.5.2
+- pygame>=2.6.0
 
 ## Installation
 
